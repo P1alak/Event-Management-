@@ -1,4 +1,4 @@
-// Sample events.js logic
+
 const eventForm = document.getElementById('eventForm');
 const eventsList = document.getElementById('eventsList');
 const searchInput = document.getElementById('search');
@@ -48,7 +48,7 @@ function renderEvents() {
       </div>
     `;
 
-    // Actions
+ 
     div.querySelector('.complete').addEventListener('click', () => {
       event.completed = !event.completed;
       saveEvents();
@@ -71,7 +71,7 @@ function isPast(dateStr, timeStr) {
   return eventDate < now;
 }
 
-// Form Submission
+
 eventForm.addEventListener('submit', e => {
   e.preventDefault();
 
@@ -90,7 +90,7 @@ eventForm.addEventListener('submit', e => {
   eventForm.reset();
 });
 
-// Listeners
+
 searchInput.addEventListener('input', renderEvents);
 filterType.addEventListener('change', renderEvents);
 sortType.addEventListener('change', renderEvents);
