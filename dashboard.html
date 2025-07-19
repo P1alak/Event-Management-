@@ -183,7 +183,7 @@
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') document.body.classList.add('dark');
 
-    // Navigation logic
+    
     document.querySelectorAll('.sidebar a').forEach(link => {
       link.addEventListener('click', () => {
         const target = link.getAttribute('data-section');
@@ -192,7 +192,7 @@
       });
     });
 
-    // Event manager logic
+    
     const eventForm = document.getElementById('eventForm');
     const eventsList = document.getElementById('eventsList');
     const searchInput = document.getElementById('search');
