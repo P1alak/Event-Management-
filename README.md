@@ -1,3 +1,6 @@
+# Live Link to the event management system:
+  https://eventmanagement77.vercel.app/
+
 # Event Management System
 
 A smart and interactive **Event Management System** built using **HTML**, **CSS**, **JavaScript**, and fundamental **Data Structures & Algorithms (DSA)**. This project lets users create, manage, sort, and delete events with ease and efficiency.
