@@ -183,7 +183,6 @@
     const saved = localStorage.getItem('theme');
     if (saved === 'dark') document.body.classList.add('dark');
 
-    
     document.querySelectorAll('.sidebar a').forEach(link => {
       link.addEventListener('click', () => {
         const target = link.getAttribute('data-section');
@@ -273,10 +272,9 @@
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('events');
         localStorage.removeItem('theme');
         localStorage.removeItem('userEmail');
-        window.location.href = 'login.html'; // Redirect after logout
+        window.location.href = 'login.html'; 
       });
     } else {
       console.warn('Logout button not found');
