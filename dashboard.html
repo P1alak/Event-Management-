@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Event Dashboard</title>
 <style>
-
 body { margin:0; font-family: Arial, sans-serif; background: #e0f0ff; display: flex; }
 .sidebar { width: 220px; background: #053067; color:white; padding:20px; height:100vh; }
 .sidebar h2 { text-align:center; margin-bottom:20px; }
@@ -133,6 +132,26 @@ let completedStack = new Stack();
 let urgentQueue = new Queue();
 let eventId = 1;
 
+// --- LocalStorage helpers ---
+function saveEvents() {
+    localStorage.setItem("events", JSON.stringify(events.toArray()));
+    localStorage.setItem("eventId", eventId);
+}
+
+function loadEvents() {
+    const savedEvents = JSON.parse(localStorage.getItem("events") || "[]");
+    eventId = parseInt(localStorage.getItem("eventId") || "1");
+
+    // Rebuild linked list
+    events = new LinkedList();
+    savedEvents.forEach(ev => {
+        events.insert(ev);
+        if(ev.priority === 'urgent' && !ev.completed) urgentQueue.enqueue(ev);
+    });
+
+    renderEvents();
+}
+
 function addEvent(){
     const title = document.getElementById('title').value.trim();
     const date = document.getElementById('date').value;
@@ -143,6 +162,7 @@ function addEvent(){
     if(priority==='urgent') urgentQueue.enqueue(event);
     document.getElementById('title').value='';
     document.getElementById('date').value='';
+    saveEvents(); // Save data
     renderEvents();
 }
 
@@ -171,6 +191,7 @@ function renderEvents(){
 function markComplete(id){
     events.markComplete(id);
     completedStack.push(id);
+    saveEvents();
     renderEvents();
 }
 
@@ -178,10 +199,15 @@ function undoComplete(){
     if(completedStack.isEmpty()){ alert("Nothing to undo"); return; }
     const id = completedStack.pop();
     events.undoComplete(id);
+    saveEvents();
     renderEvents();
 }
 
-function deleteEvent(id){ events.delete(id); renderEvents(); }
+function deleteEvent(id){ 
+    events.delete(id); 
+    saveEvents();
+    renderEvents(); 
+}
 
 function searchEvent(){
     const id=parseInt(document.getElementById('searchId').value);
@@ -211,12 +237,14 @@ function showSection(section){
 
 // --- Logout Function ---
 function logout() {
+    //localStorage.removeItem("events");
+    //localStorage.removeItem("eventId");
     alert("You have been logged out.");
-    // Optional: Redirect to login page
     window.location.href = "login.html";
-
-    document.addEventListener("DOMContentLoaded", loadEvents);
 }
+
+// --- Load data on page start ---
+document.addEventListener("DOMContentLoaded", loadEvents);
 </script>
 </body>
 </html>
