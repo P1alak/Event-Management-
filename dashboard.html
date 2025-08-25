@@ -1,191 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Event Dashboard</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h2 { color: #333; }
-    form { margin-bottom: 20px; }
-    input, select, button { margin: 5px; padding: 8px; }
-    .event { border: 1px solid #ccc; padding: 10px; margin: 5px; border-radius: 5px; }
-    .completed { text-decoration: line-through; color: gray; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Event Dashboard</title>
+<style>
+
+body { margin:0; font-family: Arial, sans-serif; background: #e0f0ff; display: flex; }
+.sidebar { width: 220px; background: #053067; color:white; padding:20px; height:100vh; }
+.sidebar h2 { text-align:center; margin-bottom:20px; }
+.sidebar button { display:block; width:100%; padding:10px; margin:10px 0; border:none; background:#1669c1; color:white; cursor:pointer; border-radius:5px; }
+.sidebar button:hover { background:#164277; }
+
+.container { flex:1; padding:20px; }
+
+h1, h2 { color:white; }
+input, select, button { padding:8px; margin:5px 0; width:100%; box-sizing:border-box; border-radius:5px; border:1px solid #ccc;}
+button { background:#1a73e8; color:white; border:none; cursor:pointer;}
+button:hover { background:#1669c1;}
+
+table { width:100%; border-collapse:collapse; margin-top:15px;}
+table, th, td { border:1px solid #ccc;}
+th, td { padding:12px; text-align:left;}
+tr.completed td { text-decoration: line-through; color: gray;}
+</style>
 </head>
 <body>
-  <h2 id="userEmail">Welcome!</h2>
-  <button id="logoutBtn">Logout</button>
 
-  <h3>Add Event</h3>
-  <form onsubmit="event.preventDefault(); addEvent();">
-    <input type="text" id="title" placeholder="Event Title" required>
-    <input type="date" id="date" required>
-    <select id="priority">
-      <option value="normal">Normal</option>
-      <option value="urgent">Urgent</option>
-    </select>
-    <button type="submit">Add Event</button>
-  </form>
+<div class="sidebar">
+<h2>Event Management System</h2>
+<button onclick="showSection('add')">Add Event</button>
+<button onclick="showSection('search')">Search Event</button>
+<button onclick="showSection('summary')">Summary</button>
+<button onclick="logout()">Logout</button> <!-- Logout button -->
+</div>
 
-  <h3>All Events</h3>
-  <div id="eventList"></div>
+<div class="container">
+<div id="add">
+<h2 style="color: rgb(13, 13, 157);">Add Event </h2>
+<input type="text" id="title" placeholder="Event Title">
+<input type="date" id="date">
+<select id="priority">
+    <option value="normal">Normal</option>
+    <option value="important">Important</option>
+    <option value="urgent">Urgent</option>
+</select>
+<button onclick="addEvent()">Add Event</button>
+</div>
 
-  <h3>Urgent Queue</h3>
-  <div id="urgentList"></div>
+<div id="search" style="display:none;">
+<h2 style="color: #053067;">Search Event by ID</h2>
+<input type="number" id="searchId" placeholder="Event ID">
+<button onclick="searchEvent()">Search</button>
+<p id="searchResult"></p>
+</div>
 
-  <h3>Completed (Undo Stack)</h3>
-  <button onclick="undoComplete()">Undo Last Complete</button>
-  <div id="completedList"></div>
+<div id="list">
+<h2 style="color: #0a3670;">Events</h2>
+<table id="eventTable">
+<thead>
+<tr><th>ID</th><th>Title</th><th>Date</th><th>Priority</th><th>Status</th><th>Actions</th></tr>
+</thead>
+<tbody></tbody>
+</table>
+</div>
 
-  <script>
-    // Linked List Implementation
-    class Node {
-      constructor(data){ this.data = data; this.next = null; }
+<div id="summary" style="display:none;">
+<h2 style="color:#053067;">Summary</h2>
+<p id="summaryText"></p>
+<h3>Undo Last Completed Event</h3>
+<button onclick="undoComplete()">Undo</button>
+</div>
+
+<script>
+// --- Linked List for events ---
+class Node {
+    constructor(event) { this.event = event; this.next = null; }
+}
+
+class LinkedList {
+    constructor() { this.head = null; this.size = 0; }
+    insert(event) {
+        const newNode = new Node(event);
+        if(!this.head) this.head = newNode;
+        else { let temp = this.head; while(temp.next) temp = temp.next; temp.next = newNode; }
+        this.size++;
     }
-    class LinkedList {
-      constructor(){ this.head = null; }
-      insert(data){
-        const node = new Node(data);
-        if(!this.head){ this.head = node; return; }
-        let current = this.head;
-        while(current.next) current = current.next;
-        current.next = node;
-      }
-      toArray(){
-        let arr=[], current=this.head;
-        while(current){ arr.push(current.data); current=current.next; }
-        return arr;
-      }
-      delete(id){
+    search(id) {
+        let temp = this.head;
+        while(temp){ if(temp.event.id === id) return temp.event; temp = temp.next; }
+        return null;
+    }
+    delete(id) {
         if(!this.head) return;
-        if(this.head.data.id===id){ this.head=this.head.next; return; }
-        let current=this.head;
-        while(current.next && current.next.data.id!==id) current=current.next;
-        if(current.next) current.next=current.next.next;
-      }
-      markComplete(id){
-        let current=this.head;
-        while(current){ if(current.data.id===id){ current.data.completed=true; return; } current=current.next; }
-      }
-      undoComplete(id){
-        let current=this.head;
-        while(current){ if(current.data.id===id){ current.data.completed=false; return; } current=current.next; }
-      }
+        if(this.head.event.id===id){ this.head=this.head.next; this.size--; return; }
+        let temp = this.head;
+        while(temp.next && temp.next.event.id!==id) temp=temp.next;
+        if(temp.next){ temp.next=temp.next.next; this.size--; }
     }
-
-    // Stack (Undo for completed tasks)
-    class Stack{
-      constructor(){ this.items=[]; }
-      push(x){ this.items.push(x); }
-      pop(){ return this.items.pop(); }
-      isEmpty(){ return this.items.length===0; }
-      toArray(){ return [...this.items]; }
+    markComplete(id) {
+        let temp = this.head;
+        while(temp){ if(temp.event.id===id){ temp.event.completed=true; break; } temp=temp.next; }
     }
-
-    // Queue (Urgent events)
-    class Queue{
-      constructor(){ this.items=[]; }
-      enqueue(x){ this.items.push(x); }
-      dequeue(){ return this.items.shift(); }
-      toArray(){ return [...this.items]; }
+    undoComplete(id){
+        let temp = this.head;
+        while(temp){ if(temp.event.id===id){ temp.event.completed=false; break; } temp=temp.next; }
     }
-
-    // Global Vars
-    let events = new LinkedList();
-    let completedStack = new Stack();
-    let urgentQueue = new Queue();
-    let eventId = 1;
-
-    // Save to localStorage
-    function saveEvents() {
-      localStorage.setItem("events", JSON.stringify(events.toArray()));
-      localStorage.setItem("eventId", eventId);
+    toArray(){
+        let arr=[]; let temp=this.head; while(temp){ arr.push(temp.event); temp=temp.next; } return arr;
     }
+}
 
-    // Load from localStorage
-    function loadEvents() {
-      const storedEvents = JSON.parse(localStorage.getItem("events")) || [];
-      eventId = parseInt(localStorage.getItem("eventId")) || 1;
-      events = new LinkedList();
-      urgentQueue = new Queue();
-      completedStack = new Stack();
+// --- Stack for undo last completed ---
+class Stack {
+    constructor(){ this.items = []; }
+    push(item){ this.items.push(item); }
+    pop(){ return this.items.pop(); }
+    peek(){ return this.items[this.items.length-1]; }
+    isEmpty(){ return this.items.length===0; }
+}
 
-      storedEvents.forEach(event => {
-        events.insert(event);
-        if(event.priority === "urgent") urgentQueue.enqueue(event);
-        if(event.completed) completedStack.push(event.id);
-      });
+// --- Queue for urgent events ---
+class Queue {
+    constructor(){ this.items = []; }
+    enqueue(item){ this.items.push(item); }
+    dequeue(){ return this.items.shift(); }
+    isEmpty(){ return this.items.length===0; }
+}
 
-      renderEvents();
-    }
+let events = new LinkedList();
+let completedStack = new Stack();
+let urgentQueue = new Queue();
+let eventId = 1;
 
-    // Add Event
-    function addEvent(){
-      const title = document.getElementById('title').value.trim();
-      const date = document.getElementById('date').value;
-      const priority = document.getElementById('priority').value;
-      if(!title||!date){ alert("Fill all fields"); return; }
-      const event={id:eventId++, title, date, priority, completed:false};
-      events.insert(event);
-      if(priority==='urgent') urgentQueue.enqueue(event);
-      document.getElementById('title').value='';
-      document.getElementById('date').value='';
-      renderEvents();
-      saveEvents(); // ✅ persist
-    }
+function addEvent(){
+    const title = document.getElementById('title').value.trim();
+    const date = document.getElementById('date').value;
+    const priority = document.getElementById('priority').value;
+    if(!title||!date){ alert("Fill all fields"); return; }
+    const event={id:eventId++, title, date, priority, completed:false};
+    events.insert(event);
+    if(priority==='urgent') urgentQueue.enqueue(event);
+    document.getElementById('title').value='';
+    document.getElementById('date').value='';
+    renderEvents();
+}
 
-    // Mark Complete
-    function markComplete(id){
-      events.markComplete(id);
-      completedStack.push(id);
-      renderEvents();
-      saveEvents();
-    }
+function renderEvents(){
+    const tbody=document.querySelector('#eventTable tbody');
+    tbody.innerHTML='';
+    const arr = events.toArray();
+    arr.forEach(event=>{
+        const tr=document.createElement('tr');
+        if(event.completed) tr.classList.add('completed');
+        tr.innerHTML=`
+        <td>${event.id}</td>
+        <td>${event.title}</td>
+        <td>${event.date}</td>
+        <td>${event.priority}</td>
+        <td>${event.completed?'Completed':'Pending'}</td>
+        <td>
+        <button onclick="markComplete(${event.id})">Complete</button>
+        <button onclick="deleteEvent(${event.id})">Delete</button>
+        </td>`;
+        tbody.appendChild(tr);
+    });
+    renderSummary();
+}
 
-    // Undo Complete
-    function undoComplete(){
-      if(completedStack.isEmpty()){ alert("Nothing to undo"); return; }
-      const id = completedStack.pop();
-      events.undoComplete(id);
-      renderEvents();
-      saveEvents();
-    }
+function markComplete(id){
+    events.markComplete(id);
+    completedStack.push(id);
+    renderEvents();
+}
 
-    // Delete Event
-    function deleteEvent(id){ 
-      events.delete(id); 
-      renderEvents();
-      saveEvents();
-    }
+function undoComplete(){
+    if(completedStack.isEmpty()){ alert("Nothing to undo"); return; }
+    const id = completedStack.pop();
+    events.undoComplete(id);
+    renderEvents();
+}
 
-    // Render Events
-    function renderEvents(){
-      const list=document.getElementById('eventList'); list.innerHTML='';
-      events.toArray().forEach(ev=>{
-        const div=document.createElement('div');
-        div.className='event'+(ev.completed?' completed':'');
-        div.innerHTML=`
-          <b>${ev.title}</b> | ${ev.date} | ${ev.priority}
-          <button onclick="markComplete(${ev.id})">Complete</button>
-          <button onclick="deleteEvent(${ev.id})">Delete</button>
-        `;
-        list.appendChild(div);
-      });
+function deleteEvent(id){ events.delete(id); renderEvents(); }
 
-      const urgent=document.getElementById('urgentList'); urgent.innerHTML='';
-      urgentQueue.toArray().forEach(ev=>{
-        urgent.innerHTML+=`<div class="event">${ev.title} | ${ev.date}</div>`;
-      });
+function searchEvent(){
+    const id=parseInt(document.getElementById('searchId').value);
+    const event=events.search(id);
+    document.getElementById('searchResult').textContent = event
+        ? `ID:${event.id}, Title:${event.title}, Date:${event.date}, Priority:${event.priority}, Status:${event.completed?'Completed':'Pending'}`
+        : "Event not found.";
+}
 
-      const comp=document.getElementById('completedList'); comp.innerHTML='';
-      completedStack.toArray().slice().reverse().forEach(id=>{
-        const ev=events.toArray().find(e=>e.id===id);
-        if(ev) comp.innerHTML+=`<div class="event completed">${ev.title}</div>`;
-      });
-    }
+function renderSummary(){
+    const arr = events.toArray();
+    const total=arr.length;
+    const completed=arr.filter(e=>e.completed).length;
+    const urgent=arr.filter(e=>e.priority==='urgent').length;
+    const important=arr.filter(e=>e.priority==='important').length;
+    const normal=arr.filter(e=>e.priority==='normal').length;
+    document.getElementById('summaryText').textContent=
+    `Total: ${total}, Completed: ${completed}, Urgent: ${urgent}, Important: ${important}, Normal: ${normal}`;
+}
 
-    // Init
+// --- Sidebar Navigation ---
+function showSection(section){
+    document.getElementById('add').style.display=section==='add'?'block':'none';
+    document.getElementById('search').style.display=section==='search'?'block':'none';
+    document.getElementById('summary').style.display=section==='summary'?'block':'none';
+}
+
+// --- Logout Function ---
+function logout() {
+    alert("You have been logged out.");
+    // Optional: Redirect to login page
+    window.location.href = "login.html";
+
     document.addEventListener("DOMContentLoaded", loadEvents);
-  </script>
+}
+</script>
 </body>
 </html>
